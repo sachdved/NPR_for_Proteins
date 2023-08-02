@@ -16,7 +16,7 @@ class MLP(torch.nn.Module):
         self.mlp.add_module('input_layer', torch.nn.Linear(input_size, output_sizes[0]))
         self.mlp.add_module('relu', torch.nn.ReLU())
 
-        for index, output in range(1, len(output_sizes)):
+        for index in range(1, len(output_sizes)):
             self.mlp.add_module('hidden_layer_{}'.format(index), torch.nn.Linear(output_sizes[index-1], output_sizes[index]))
             self.mlp.add_module('relu_{}'.format(index+1), torch.nn.ReLU())
 
