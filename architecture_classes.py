@@ -1,3 +1,6 @@
+import torch
+import numpy as np
+
 class MLP(torch.nn.Module):
     def __init__(self, 
         input_size,
@@ -39,28 +42,33 @@ class DotProductAttention(torch.nn.Module):
 class MultiHeadedAttention(torch.nn.Module):
     def __init__(self, 
                  h,
-                 d_input, 
-                 d_k, 
+                 d_query, 
+                 d_key,
+                 d_values,
+                 d_hidden,
                  d_model,
                  activation = torch.nn.ReLU,
-                 **kwargs):
-        super(MultiHeadedAttention, self).__init__(**kwargs)
+                 **kwargs
+    ):
+        super().__init__(**kwargs)
         self.attention = DotProductAttention()
         self.heads = h
-        self.d_k = d_k
-        self.d_input = d_input
-        self.W_q = torch.nn.Linear(d_input, d_k*h)
-        self.W_k = torch.nn.Linear(d_input, d_k*h)
-        self.W_v = torch.nn.Linear(d_input, d_k*h)
-        self.W_o = torch.nn.Linear(d_k, d_model)     
+        self.d_query = d_query
+        self.d_key = d_key
+        self.d_values = d_values
+        self.d_hidden = d_hidden
+        self.W_q = torch.nn.Linear(d_query, d_hidden*h)
+        self.W_k = torch.nn.Linear(d_key, d_hidden*h)
+        self.W_v = torch.nn.Linear(d_values, d_hidden*h)
+        self.W_o = torch.nn.Linear(d_hidden, d_model)     
 
     def reshape_tensor(self, x, heads, flag):
         if flag:
-            x = torch.reshape(x, shape = (x.shape[0], x.shape[1], heads, self.d_k))
+            x = torch.reshape(x, shape = (x.shape[0], x.shape[1], heads, x.shape[2]//heads))
             x = x.permute(0,2,1,3)
         else:
             x = x.transpose(-1,-2)
-            x = torch.reshape(x, shape = (x.shape[0], x.shape[1], heads*self.d_k))
+            x = torch.reshape(x, shape = (x.shape[0], x.shape[1], x.shape[2]//heads))
         return x
 
     def forward(self, queries, keys, values, mask = None):
@@ -72,6 +80,6 @@ class MultiHeadedAttention(torch.nn.Module):
         v_reshaped = self.reshape_tensor(self.W_v(values), self.heads, True)
 
         
-        output, attention = self.attention(q_reshaped, k_reshaped, v_reshaped, torch.tensor(self.d_k), mask)
+        output, attention = self.attention(q_reshaped, k_reshaped, v_reshaped, torch.tensor(self.d_hidden), mask)
 
         return self.W_o(output), output    
