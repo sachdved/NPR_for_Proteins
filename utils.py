@@ -14,8 +14,8 @@ class ProteinDataset(torch.utils.data.Dataset):
         self.data = data
 
         self.AMINO_ACIDS = "ARNDCQEGHILKMFPSTWYV-"
-        self.IDX_TO_AA = list(AMINO_ACIDS)
-        self.AA_TO_IDX = {aa: i for i, aa in enumerate(IDX_TO_AA)}
+        self.IDX_TO_AA = list(self.AMINO_ACIDS)
+        self.AA_TO_IDX = {aa: i for i, aa in enumerate(self.IDX_TO_AA)}
 
     def __len__(self):
         return self.data.shape[0]
