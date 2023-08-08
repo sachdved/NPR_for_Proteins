@@ -22,7 +22,7 @@ class ProteinDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
 
-        X = torch.unsqueeze(torch.arange(start = 0, end = self.data.shape[1]),-1)
+        X = torch.arange(start = 0, end = self.data.shape[1])
 
         Y = self.data[index]
 
@@ -37,7 +37,7 @@ class ProteinDataset(torch.utils.data.Dataset):
         return one_hot_encoded
         
 
-def context_target_splitter(batch, min_context, max_context, len_seq):
+def context_target_splitter(batch, min_context, max_context, len_seq, x_dim, y_dim):
     """Splits batch into context and target splits
     input:
         batch: generated from pytorch DataLoader
@@ -52,12 +52,14 @@ def context_target_splitter(batch, min_context, max_context, len_seq):
 
     X, Y = batch
 
-    X_context = torch.zeros(size=(X.shape[0], num_context, X.shape[-1]))
-    Y_context = torch.zeros(size=(Y.shape[0], num_context, Y.shape[-1]))
+    X = X.squeeze()
+
+    X_context = torch.zeros(size=(X.shape[0], num_context, x_dim))
+    Y_context = torch.zeros(size=(Y.shape[0], num_context, y_dim))
 
     
-    X_target = torch.zeros(size=(X.shape[0], len_seq - num_context, X.shape[-1]))
-    Y_target = torch.zeros(size=(Y.shape[0], len_seq - num_context, Y.shape[-1]))
+    X_target = torch.zeros(size=(X.shape[0], len_seq, x_dim))
+    Y_target = torch.zeros(size=(Y.shape[0], len_seq, y_dim))
     
     
 
@@ -68,10 +70,10 @@ def context_target_splitter(batch, min_context, max_context, len_seq):
         shuffled_indices = torch.randperm(len_seq)
     
         context_indices = shuffled_indices[:num_context]
-        target_indices = shuffled_indices[num_context:]
+        target_indices = shuffled_indices
         
-        X_context[index] = context_indices.unsqueeze(-1)
-        X_target[index]  = target_indices.unsqueeze(-1)
+        X_context[index] = X[index,context_indices].unsqueeze(-1)
+        X_target[index]  = X[index, target_indices].unsqueeze(-1)
         
         Y_context[index] = seq[context_indices]
         Y_target[index] = seq[target_indices]
