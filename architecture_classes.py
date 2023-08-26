@@ -15,11 +15,12 @@ class MLP(torch.nn.Module):
 
         self.mlp.add_module('input_layer', torch.nn.Linear(input_size, output_sizes[0]))
         self.mlp.add_module('relu', torch.nn.ReLU())
+        self.mlp.add_module('dropout', torch.nn.Dropout(0.1))
 
         for index in range(1, len(output_sizes)):
             self.mlp.add_module('hidden_layer_{}'.format(index), torch.nn.Linear(output_sizes[index-1], output_sizes[index]))
             self.mlp.add_module('relu_{}'.format(index+1), torch.nn.ReLU())
-
+            self.mlp.add_module('dropout_{}', torch.nn.Dropout(0.1))
 
     def forward(self, x):
         assert x.shape[-1] == self.input_size, "Input to MLP not the correct dimension"
@@ -60,15 +61,15 @@ class MultiHeadedAttention(torch.nn.Module):
         self.W_q = torch.nn.Linear(d_query, d_hidden*h)
         self.W_k = torch.nn.Linear(d_key, d_hidden*h)
         self.W_v = torch.nn.Linear(d_values, d_hidden*h)
-        self.W_o = torch.nn.Linear(d_hidden, d_model)     
+        self.W_o = torch.nn.Linear(d_hidden*h, d_model)     
 
     def reshape_tensor(self, x, heads, flag):
         if flag:
             x = torch.reshape(x, shape = (x.shape[0], x.shape[1], heads, x.shape[2]//heads))
             x = x.permute(0,2,1,3)
         else:
-            x = x.transpose(-1,-2)
-            x = torch.reshape(x, shape = (x.shape[0], x.shape[1], x.shape[2]//heads))
+            x = x.permute(0,2,1,3)
+            x = torch.reshape(x, shape = (x.shape[0], x.shape[1], x.shape[3]*heads))
         return x
 
     def forward(self, queries, keys, values, mask = None):
@@ -82,4 +83,5 @@ class MultiHeadedAttention(torch.nn.Module):
         
         output, attention = self.attention(q_reshaped, k_reshaped, v_reshaped, torch.tensor(self.d_hidden), mask)
 
-        return self.W_o(output), output    
+        output_reshaped = self.reshape_tensor(output, self.heads, False)
+        return self.W_o(output_reshaped), output    
